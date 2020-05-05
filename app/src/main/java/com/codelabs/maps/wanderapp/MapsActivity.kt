@@ -1,11 +1,15 @@
 package com.codelabs.maps.wanderapp
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -17,7 +21,9 @@ import java.util.*
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var map: GoogleMap
-    private val TAG = MapsActivity::class.java.simpleName
+    private val tag = MapsActivity::class.java.simpleName
+
+    private val REQUEST_LOCATION_PERMISSION = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +70,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         setMapLongClick(map)
         setPoiClick(map)
         setMapStyle(map)
+        enableMyLocation()
+    }
+
+    override fun onRequestPermissionsResult(
+            requestCode: Int,
+            permissions: Array<out String>,
+            grantResults: IntArray) {
+        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            if (grantResults.contains(PackageManager.PERMISSION_GRANTED)) {
+                enableMyLocation()
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -139,10 +157,34 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             )
 
             if (!success) {
-                Log.e(TAG, "Style parsing failed.")
+                Log.e(tag, "Style parsing failed.")
             }
         } catch (e: Resources.NotFoundException) {
-            Log.e(TAG, "Can't find style. Error: $e")
+            Log.e(tag, "Can't find style. Error: $e")
+        }
+    }
+
+    /**
+     * check if the user has granted the permission.
+     */
+    private fun isPermissionGranted() : Boolean {
+        return ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    /**
+     * if the permissions is granted, enable the location layer. Otherwise,
+     * request the permission.
+     */
+    private fun enableMyLocation() {
+        if (isPermissionGranted()) {
+            map.isMyLocationEnabled = true
+        } else {
+            ActivityCompat.requestPermissions(
+                    this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                    REQUEST_LOCATION_PERMISSION
+            )
         }
     }
 
